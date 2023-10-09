@@ -1,20 +1,41 @@
-import { useContext, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import google from "../assets/google.png";
+import { Helmet } from "react-helmet-async";
+import {
+  GoogleAuthProvider,
+  getAuth,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { useContext, useState } from "react";
+import { AuthContext } from "../context/AuthProveider";
+import axios from "axios";
 import { toast } from "react-hot-toast";
-import { GoogleAuthProvider } from "firebase/auth";
-import { AuthContext } from "../Context/AuthProvider";
+import { useForm } from "react-hook-form";
+import { app } from "../firebase/firebaseConfig";
+
 
 export default function Login() {
-  const location = useLocation();
-  const { loginUser, googleLogin, user } = useContext(AuthContext);
-  const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // from - redirect
+  const { googleLogin, user } = useContext(AuthContext);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+
+  const auth = getAuth(app);
+
+  const [loginError, setLoginError] = useState("");
+  const [inputType, setInputType] = useState("password");
+  const [checkBoxValue, setCheckBoxValue] = useState(false);
+
   const redirectLocation = location?.state?.from?.pathname || "/";
 
   // google provider
-  const googleProvider = new GoogleAuthProvider();;
+  const googleProvider = new GoogleAuthProvider();
 
   if (user) {
     return <Navigate to="/" state={{ from: location }} replace />;
@@ -25,110 +46,123 @@ export default function Login() {
     googleLogin(googleProvider)
       .then((result) => {
         const loggedUser = result.user;
-        console.log(loggedUser);
+        const { email, displayName, photoURL } = loggedUser;
 
+        axios
+          .post(import.meta.env.VITE_API_BASE_URL + "/api/user", {
+            email,
+            displayName,
+            photoURL,
+            role: "student",
+          })
+          .then(function (response) {
+            if (response?.data?.accessToken) {
+              localStorage.setItem("accessToken", response.data.accessToken);
+              navigate(redirectLocation);
+            }
+          })
+          .catch(function (error) {
+            console.error(error);
+          });
         // naviagte to the location
-        navigate(redirectLocation);
       })
       .catch((err) => console.log(err.message));
   };
 
   // sign in user
-  const handleLogin = (e) => {
-    // preventing refreshing
-    e.preventDefault();
+  const handleEmailAndPasswordLogin = (data) => {
     setLoginError("");
 
-    const email = e.target.email.value;
-    const password = e.target.password.value;
+    const { email, password } = data;
 
     // login user
-    loginUser(email, password)
+    signInWithEmailAndPassword(auth, email, password)
       .then((res) => {
-        const loggedUser = res.user;
+// console.log(res)
         toast.success("Login Successfull");
 
         // redirected to main location
         navigate(redirectLocation);
       })
       .catch((err) => {
+        console.log(err)
         if (err?.message) {
           setLoginError("Please insert correct email and password!");
         }
       });
-
-    e.target.reset();
   };
 
-  document.title = "Login Page";
-
   return (
-    <section className="container hero min-h-screen bg-base-200">
-      <div className="flex justify-center items-start">
-        <div className="card flex-shrink-0 shadow-2xl bg-base-100">
-          <div className="card-body">
-            <h1 className="text-3xl font-bold text-primary mb-2">Login now!</h1>
-            <form onSubmit={handleLogin}>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Email</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="email"
-                  className="input input-bordered"
-                  name="email"
-                />
-              </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Password</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="password"
-                  className="input input-bordered"
-                  name="password"
-                />
-              </div>
-
-              <p className="text-sm mt-2">
-                Don’t have an account?{" "}
-                <Link className="hover:text-blue-600" to="/register">
-                  Create an account
-                </Link>
-              </p>
-              <div className="form-control mt-3">
-                <button className="btn btn-primary rounded-full">Login</button>
-              </div>
-            </form>
-
-            <p>{loginError}</p>
-
+    <section className="flex justify-center items-center h-screen">
+      <Helmet>
+        <title>Login Page</title>
+      </Helmet>
+      <div>
+        <div className="card flex-shrink-0 w-full shadow-2xl bg-base-100 pt-4">
+          <Link to="/" className="text-center text-xl font-semibold mt-4">LyricLounge</Link>
+          <h1 className="text-center text-2xl font-semibold mt-4">
+            Login to your Account
+          </h1>
+          <form
+            onSubmit={handleSubmit(handleEmailAndPasswordLogin)}
+            className="card-body"
+          >
             <div className="form-control">
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                className="btn bg-[#4285F4] hover:bg-[#4285F4]/90 text-white rounded-full"
-              >
-                <svg
-                  className="w-4 h-4 mr-2 -ml-1"
-                  aria-hidden="true"
-                  focusable="false"
-                  data-prefix="fab"
-                  data-icon="google"
-                  role="img"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 488 512"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"
-                  ></path>
-                </svg>
-                Sign in with Google
+              <label className="label">
+                <span className="label-text">Email</span>
+              </label>
+              <input
+                type="email"
+                placeholder="email"
+                {...register("email")}
+                className="input input-bordered"
+              />
+            </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Password</span>
+              </label>
+              <input
+                type={inputType}
+                placeholder="password"
+                {...register("password")}
+                className="input input-bordered"
+              />
+            </div>
+            <div className="form-control">
+              <label className="label cursor-pointer">
+                <span className="label-text">Show password</span>
+                <input
+                  type="checkbox"
+                  checked={checkBoxValue}
+                  onChange={() => {
+                    setCheckBoxValue(!checkBoxValue);
+                    setInputType(checkBoxValue ? "password" : "text");
+                  }}
+                  className="checkbox"
+                />
+              </label>
+            </div>
+            <div className="form-control mt-3">
+              <button type="submit" className="btn btn-primary">
+                Login
               </button>
             </div>
+          </form>
+          <div className="px-8 pb-8">
+            <button className="w-full btn flex" onClick={handleGoogleLogin}>
+              <img className="w-8" src={google} alt="google" />
+              <span>Login with Google</span>
+            </button>
+            <p className="text-sm text-red-600">
+              {loginError ? loginError : ""}
+            </p>
+            <p className="text-sm mt-3">
+              Don’t have an account?{" "}
+              <Link className="hover:text-blue-600" to="/registration-form">
+                Create an account
+              </Link>
+            </p>
           </div>
         </div>
       </div>

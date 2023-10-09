@@ -17,19 +17,6 @@ export default {
     },
     extend: {},
   },
-  daisyui: {
-    styled: true,
-    themes: [
-      "light", // first one will be the default theme
-      "dark",
-      {
-        mytheme: {
-          primary: "#6c6a69",
-        },
-      },
-      "cupcake",
-    ],
-  },
   plugins: [require("daisyui")],
 }
 

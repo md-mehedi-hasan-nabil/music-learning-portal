@@ -1,20 +1,20 @@
-import { useEffect } from "react";
+import DefaultLayout from "../components/Layout/DefaultLayout";
 import Hero from "../components/Hero";
-import Layout from "../components/Layout";
-import Toys from "../components/Toys";
-import Contact from "../components/Contact";
+import Courses from "../components/Courses";
+import Instructors from "../components/Instructors";
+import Blog from "../components/Blog";
+import { Helmet } from "react-helmet-async";
 
 export default function Home() {
-  useEffect(() => {
-    document.title = "Home Page";
-  }, []);
   return (
-    <Layout>
-      <main className="container">
-        <Hero />
-        <Toys />
-        <Contact />
-      </main>
-    </Layout>
+    <DefaultLayout>
+      <Helmet>
+        <title>Home Page</title>
+      </Helmet>
+       <Hero />
+      <Courses />
+      <Instructors /> 
+      <Blog />
+    </DefaultLayout>
   );
 }
